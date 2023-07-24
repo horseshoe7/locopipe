@@ -131,12 +131,24 @@ public struct LocoPipe: ParsableCommand {
         
         let fm = FileManager.default
         
+        if self.verbose {
+            ConsoleIO.logDebug("Current Working Directory: \(fm.currentDirectoryPath)")
+        }
+        
+        
         // now determine if there is a file at that path
         var relativeDirectoryURL = outputArg.hasPrefix(".") ? URL(filePath: fm.currentDirectoryPath) : nil
         let outputFileURL = URL(filePath: outputArg, directoryHint: .notDirectory, relativeTo: relativeDirectoryURL)
         let outputFolderURL = outputFileURL.deletingLastPathComponent()
         if !fm.fileExists(atPath: outputFolderURL.path()) {
-            try fm.createDirectory(at: outputFolderURL, withIntermediateDirectories: true)
+            do {
+                try fm.createDirectory(at: outputFolderURL, withIntermediateDirectories: true)
+            } catch let e {
+                if self.verbose {
+                    ConsoleIO.logError("Failed creating directory: \(String.init(describing: e))")   
+                }
+                throw e
+            }
         }
         
         relativeDirectoryURL = inputArg.hasPrefix(".") ? URL(filePath: fm.currentDirectoryPath) : nil
@@ -152,27 +164,35 @@ public struct LocoPipe: ParsableCommand {
             throw ValidationError("The provided input path could not be found!")
         }
         
-        let directoryContents = try fm.contentsOfDirectory(at: inputFolderURL, includingPropertiesForKeys: nil, options: [.skipsSubdirectoryDescendants])
+        do {
+            let directoryContents = try fm.contentsOfDirectory(at: inputFolderURL, includingPropertiesForKeys: nil, options: [.skipsSubdirectoryDescendants])
+            
+            var containsLprojFolder = false
+            var containsReferenceLanguage = false
+            for pathName in directoryContents {
+                if pathName.lastPathComponent.contains(referenceLanguageCode) {
+                    containsReferenceLanguage = true
+                }
+                if pathName.lastPathComponent.contains(Constants.languageFolderExtension) {
+                    containsLprojFolder = true
+                }
+            }
+            
+            guard containsReferenceLanguage else {
+                throw ValidationError("The input folder provided does not contain the specified reference language!")
+            }
+            
+            guard containsLprojFolder else {
+                throw ValidationError("The input folder provided does not contain any Localizable content folder (i.e. .lproj folder)")
+            }
+            
+            return .init(name: self.name, inputFolder: inputFolderURL, outputFile: outputFileURL, referenceLanguageCode: referenceLanguageCode, isVerbose: self.verbose)
 
-        var containsLprojFolder = false
-        var containsReferenceLanguage = false
-        for pathName in directoryContents {
-            if pathName.lastPathComponent.contains(referenceLanguageCode) {
-                containsReferenceLanguage = true
+        } catch let e {
+            if self.verbose {
+                ConsoleIO.logError("Failed listing directory contents: \(e)")
             }
-            if pathName.lastPathComponent.contains(Constants.languageFolderExtension) {
-                containsLprojFolder = true
-            }
+            throw e
         }
-        
-        guard containsReferenceLanguage else {
-            throw ValidationError("The input folder provided does not contain the specified reference language!")
-        }
-        
-        guard containsLprojFolder else {
-            throw ValidationError("The input folder provided does not contain any Localizable content folder (i.e. .lproj folder)")
-        }
-        
-        return .init(name: self.name, inputFolder: inputFolderURL, outputFile: outputFileURL, referenceLanguageCode: referenceLanguageCode, isVerbose: self.verbose)
     }
 }
