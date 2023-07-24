@@ -1,8 +1,16 @@
 import Foundation
 
-public typealias LocalizationEntry = (key: String, value: String, comments: String)
+
 
 public final class TSVFileParser {
+    
+    public typealias LocalizationEntry = (key: String, value: String, comments: String)
+    
+    public struct Configuration {
+        let name: String
+        let inputFile: URL
+        let outputFolder: URL
+    }
     
     public enum ParserError: Error, LocalizedError {
         case noContent
@@ -24,9 +32,9 @@ public final class TSVFileParser {
         }
     }
 
-    let configuration: LocoPipe.Configuration
+    let configuration: Configuration
     
-    public init(_ configuration: LocoPipe.Configuration) {
+    public init(_ configuration: Configuration) {
         self.configuration = configuration
     }
     
@@ -45,10 +53,6 @@ public final class TSVFileParser {
 }
 
 extension TSVFileParser {
-    
-    var tab: String {
-        return Self.tab
-    }
     
     func parse(_ contents: String) throws {
         
@@ -69,7 +73,7 @@ extension TSVFileParser {
         }
         
         // the document should have comments, iOS Key, Android Key, then at least one language
-        let columnHeaders = firstRow.components(separatedBy: tab)
+        let columnHeaders = firstRow.components(separatedBy: Constants.tab)
         guard columnHeaders.count >= numberOfNonLanguageColumns + 1 else {
             throw ParserError.unexpectedFormat
         }
@@ -117,7 +121,7 @@ extension TSVFileParser {
             // get output folder, create if necessary
             // for each language, create a <languageCode>.lproj folder if it doesn't exist
             for languageCode in results.keys {
-                let folderName = "/\(languageCode).lproj"
+                let folderName = "/\(languageCode).\(Constants.languageFolderExtension)"
                 let outputFolder = self.configuration.outputFolder.appendingPathComponent(folderName)
                 
                 if !fm.fileExists(atPath: outputFolder.path, isDirectory: nil) {
@@ -147,11 +151,9 @@ extension TSVFileParser {
         return 2 // could be 3 in the future (Android support)
     }
     
-    static let tab: String = "\\t"
-    
     static func getColumnValues(from tsvText: String) -> [String] {
         
-        return tsvText.components(separatedBy: tab)
+        return tsvText.components(separatedBy: Constants.tab)
     }
     
     // will only throw if there's a write error

@@ -2,6 +2,12 @@ import ArgumentParser
 import Foundation
 
 
+
+enum Constants {
+    static let tab: String = "\\t"
+    static let languageFolderExtension = "lproj"
+}
+
 public struct LocoPipe: ParsableCommand {
     
     public static var configuration = CommandConfiguration(
@@ -16,11 +22,7 @@ public struct LocoPipe: ParsableCommand {
         helpNames: nil
     )
     
-    public struct Configuration {
-        let name: String
-        let inputFile: URL
-        let outputFolder: URL
-    }
+    
     
     @Argument(help: "The of the output .strings file(s)")
     public var name: String
@@ -31,36 +33,45 @@ public struct LocoPipe: ParsableCommand {
     @Option(name: .shortAndLong, help: "The path to the output folder.")
     public var output: String?
     
-    @Flag(help: "Otherwise known as a 'verbose' flag, it will print more information as it parses.")
+    @Flag(name: .long, help: "Otherwise known as a 'verbose' flag, it will print more information as it parses.")
     public var showDetails = false
     
+    @Flag(name: .long, help: "Will take a .strings input folder and generate a .tsv file.")
+    public var inverse = false
+    
+    @Option(name: .shortAndLong, help: "The language code that should be treated as the reference (for comments)")
+    public var referenceLanguageCode: String?
     
     public init() {
         
     }
-//    public init(name: String, input: String? = nil, output: String? = nil, showDetails: Bool = false) {
-//        self.name = name
-//        self.input = input
-//        self.output = output
-//        self.showDetails = showDetails
-//    }
     
     public mutating func run() throws {
         
         var input: String = ""
         var output: String = ""
         
-        let configuration = try validateArguments(input: &input, output: &output)
+        if self.inverse {
+            // parse the strings to TSV
+            let configuration: TSVFileGenerator.Configuration = try validateArguments(input: &input, output: &output)
+            let parser = TSVFileGenerator(configuration)
+            try parser.parseAndGenerateOutput()
+            
+        } else {
+            // parse the TSV to strings
+            let configuration: TSVFileParser.Configuration = try validateArguments(input: &input, output: &output)
+            let parser = TSVFileParser(configuration)
+            try parser.parseAndGenerateOutput()
+        }
         
-        let parser = TSVFileParser(configuration)
-        
-        try parser.parseAndGenerateOutput()
         
         print("Generated Localization Files Successfully")
         //throw ExitCode.success
     }
     
-    func validateArguments(input: inout String, output: inout String) throws -> LocoPipe.Configuration {
+    // MARK: - TSV Parsing
+    
+    func validateArguments(input: inout String, output: inout String) throws -> TSVFileParser.Configuration {
         
         guard let inputArg = self.input else {
             throw ValidationError("You need to provide an input argument or else this tool won't work!")
@@ -95,5 +106,68 @@ public struct LocoPipe: ParsableCommand {
         
         
         return .init(name: self.name, inputFile: inputURL, outputFolder: outputFolderURL)
+    }
+    
+    // MARK: - TSV Generating
+    
+    func validateArguments(input: inout String, output: inout String) throws -> TSVFileGenerator.Configuration {
+        
+        guard let inputArg = self.input else {
+            throw ValidationError("You need to provide an input argument or else this tool won't work!")
+        }
+        
+        guard let outputArg = self.output else {
+            throw ValidationError("You need to provide an output argument or else this tool won't work!")
+        }
+        
+        guard let referenceLanguageCode = self.referenceLanguageCode else {
+            throw ValidationError("You need to provide a language code of the strings folder that will be treated as the reference language.")
+        }
+        
+        let fm = FileManager.default
+        
+        // now determine if there is a file at that path
+        var relativeDirectoryURL = outputArg.hasPrefix(".") ? URL(filePath: fm.currentDirectoryPath) : nil
+        let outputFileURL = URL(filePath: outputArg, directoryHint: .notDirectory, relativeTo: relativeDirectoryURL)
+        let outputFolderURL = outputFileURL.deletingLastPathComponent()
+        if !fm.fileExists(atPath: outputFolderURL.path()) {
+            try fm.createDirectory(at: outputFolderURL, withIntermediateDirectories: true)
+        }
+        
+        relativeDirectoryURL = inputArg.hasPrefix(".") ? URL(filePath: fm.currentDirectoryPath) : nil
+        let inputFolderURL = URL(filePath: inputArg, directoryHint: .isDirectory, relativeTo: relativeDirectoryURL)
+        var isDir : ObjCBool = false
+        if fm.fileExists(atPath: inputFolderURL.path(), isDirectory: &isDir) {
+            if !isDir.boolValue {
+                // file exists and is not a directory
+                // invalid output path
+                throw ValidationError("The provided output path is not a directory but needs to be!")
+            }
+        } else {
+            throw ValidationError("The provided input path could not be found!")
+        }
+        
+        let directoryContents = try fm.contentsOfDirectory(at: inputFolderURL, includingPropertiesForKeys: nil, options: [.skipsSubdirectoryDescendants])
+
+        var containsLprojFolder = false
+        var containsReferenceLanguage = false
+        for pathName in directoryContents {
+            if pathName.lastPathComponent.contains(referenceLanguageCode) {
+                containsReferenceLanguage = true
+            }
+            if pathName.lastPathComponent.contains(Constants.languageFolderExtension) {
+                containsLprojFolder = true
+            }
+        }
+        
+        guard containsReferenceLanguage else {
+            throw ValidationError("The input folder provided does not contain the specified reference language!")
+        }
+        
+        guard containsLprojFolder else {
+            throw ValidationError("The input folder provided does not contain any Localizable content folder (i.e. .lproj folder)")
+        }
+        
+        return .init(name: self.name, inputFolder: inputFolderURL, outputFile: outputFileURL, referenceLanguageCode: referenceLanguageCode)
     }
 }

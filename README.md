@@ -6,6 +6,11 @@ The idea is that it takes a TSV file with specific column titles, and converts t
 
 Basically you have 2 initial columns (Comments, iOS Localization Key), then any subsequent columns are your language codes (e.g. en, de, en_GB, de_AT, etc.)
 
+It ALSO can take existing Localizable.strings files that you didn't have managed, and parse them into a TSV file so that you can import that into a table to become your master.  This saves a LOT of manual labour.  (See Further Below)
+
+
+## Parsing TSV
+
 usage:
 
 `locopipe Localizable -i ./inputFilename.tsv -o ../../Resources/Localization` 
@@ -21,3 +26,20 @@ Roadmap:
 - Any missing entries will use the reference value
 - Any empty cells in the reference language will omit that key-value pair in ALL languages
 
+## Generating TSV
+
+Say you have a folder structure of
+
+```
+Localization
+    ├── en.lproj
+        └── Localizable.strings
+    └── de.lproj
+        └── Localizable.strings
+```
+
+you would run locopipe with:
+
+`locopipe Localizable -i ./Localization -o ./Localization/LocalizationMaster.tsv --inverse -r en`
+
+this tells to run the 'inverse' parser, i.e. the generator, and you specify that "en" is the reference language code.

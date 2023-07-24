@@ -1,0 +1,11 @@
+/* 
+  Localizable.strings
+  
+
+  Created by Stephen OConnor on 24.07.23.
+  
+*/
+
+"TestKey" = "TestWert";
+
+"TestKey.Two" = "TestWert2";

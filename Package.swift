@@ -29,7 +29,7 @@ let package = Package(
             name: "LocoPipeLibTests",
             dependencies: ["LocoPipeLib"],
             resources: [
-                .copy("Resources/TestFile.tsv")
+                .copy("Resources")
             ]
         )
     ],
