@@ -1,0 +1,3 @@
+import LocoPipeLib
+
+CommandLineTool.main()
