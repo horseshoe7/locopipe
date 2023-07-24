@@ -10,6 +10,7 @@ public struct TSVFileGenerator {
         let inputFolder: URL
         let outputFile: URL
         let referenceLanguageCode: String
+        let delimiter: String
         let isVerbose: Bool
     }
     
@@ -41,6 +42,10 @@ public struct TSVFileGenerator {
             ConsoleIO.logDebug("Output File: \(configuration.outputFile.path())")
             ConsoleIO.logDebug("Reference Language Code: \(configuration.referenceLanguageCode)")
         }
+    }
+    
+    private var delimiter: String {
+        return self.configuration.delimiter
     }
     
     public func parseAndGenerateOutput() throws {
@@ -166,9 +171,9 @@ public struct TSVFileGenerator {
             throw ParserError.internalError(details: "Did not expect there to be no reference language content at this point.")
         }
         
-        var header = "Comments\(Constants.tab)iOS Key\(Constants.tab)\(self.configuration.referenceLanguageCode)"
+        var header = "Comments\(self.delimiter)iOS Key\(self.delimiter)\(self.configuration.referenceLanguageCode)"
         for otherLanguageCode in otherLanguageCodes {
-            header += "\(Constants.tab)\(otherLanguageCode)"
+            header += "\(self.delimiter)\(otherLanguageCode)"
         }
         var output = header + "\n"
         
@@ -177,13 +182,13 @@ public struct TSVFileGenerator {
             guard let referenceContent = referenceLanguage[key] else {
                 continue
             }
-            var entry = "\(referenceContent.comments)\(Constants.tab)\(referenceContent.key)\(Constants.tab)\(referenceContent.value)"
+            var entry = "\(referenceContent.comments)\(self.delimiter)\(referenceContent.key)\(self.delimiter)\(referenceContent.value)"
             
             for otherLanguageCode in otherLanguageCodes {
                 if let otherLanguage = parsedContent[otherLanguageCode], let languageContent = otherLanguage[key] {
-                    entry += "\(Constants.tab)\(languageContent.value)"
+                    entry += "\(self.delimiter)\(languageContent.value)"
                 } else {
-                    entry += "\(Constants.tab)\(referenceContent.value)"
+                    entry += "\(self.delimiter)\(referenceContent.value)"
                 }
             }
             

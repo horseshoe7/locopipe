@@ -22,11 +22,14 @@ final class LocoPipeTests: XCTestCase {
         }
         
         var locopipe = LocoPipe()
+        
+        // you have to provide all arguments that are required to work.  This isn't the case when running from the command line.
         locopipe.name = "Localizable"
         locopipe.input = testFileURL.path()
         locopipe.output = NSTemporaryDirectory()
         locopipe.inverse = false
-        locopipe.verbose = false
+        locopipe.verbose = true
+
         
         try locopipe.run()
         
@@ -42,12 +45,15 @@ final class LocoPipeTests: XCTestCase {
         }
         
         var locopipe = LocoPipe()
+        
+        // you have to provide all arguments that are required to work.  This isn't the case when running from the command line.
         locopipe.name = "Localizable"
         locopipe.input = placeTestFilesIntoTempFolder([deStrings, enStrings])
         locopipe.output = "\(locopipe.input!)/Output.tsv"
         locopipe.inverse = true
         locopipe.referenceLanguageCode = "en"
-        locopipe.verbose = false
+        locopipe.verbose = true
+        locopipe.delimiter = nil
         
         try locopipe.run()
         

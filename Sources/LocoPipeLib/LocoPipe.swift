@@ -45,26 +45,28 @@ public struct LocoPipe: ParsableCommand {
     @Option(name: .shortAndLong, help: "The language code that should be treated as the reference (for comments)")
     public var referenceLanguageCode: String?
     
+    @Option(name: .shortAndLong, help: "Some applications that you want to import a TSV into, have trouble interpreting the tab character.  Override with your own type here.")
+    public var delimiter: String?
+    
     public init() {
         
     }
     
     public mutating func run() throws {
         
-        var input: String = ""
-        var output: String = ""
-        
         if self.inverse {
+            
+            
             // parse the strings to TSV
             ConsoleIO.logDebug("Parsing Localizable Strings to TSV")
-            let configuration: TSVFileGenerator.Configuration = try validateArguments(input: &input, output: &output)
+            let configuration: TSVFileGenerator.Configuration = try validateArguments()
             let parser = TSVFileGenerator(configuration)
             try parser.parseAndGenerateOutput()
             
         } else {
             // parse the TSV to strings
             ConsoleIO.logDebug("Parsing TSV File to Strings")
-            let configuration: TSVFileParser.Configuration = try validateArguments(input: &input, output: &output)
+            let configuration: TSVFileParser.Configuration = try validateArguments()
             let parser = TSVFileParser(configuration)
             try parser.parseAndGenerateOutput()
         }
@@ -76,7 +78,7 @@ public struct LocoPipe: ParsableCommand {
     
     // MARK: - TSV Parsing
     
-    func validateArguments(input: inout String, output: inout String) throws -> TSVFileParser.Configuration {
+    func validateArguments() throws -> TSVFileParser.Configuration {
         
         guard let inputArg = self.input else {
             throw ValidationError("You need to provide an input argument or else this tool won't work!")
@@ -115,7 +117,7 @@ public struct LocoPipe: ParsableCommand {
     
     // MARK: - TSV Generating
     
-    func validateArguments(input: inout String, output: inout String) throws -> TSVFileGenerator.Configuration {
+    func validateArguments() throws -> TSVFileGenerator.Configuration {
         
         guard let inputArg = self.input else {
             throw ValidationError("You need to provide an input argument or else this tool won't work!")
@@ -128,6 +130,8 @@ public struct LocoPipe: ParsableCommand {
         guard let referenceLanguageCode = self.referenceLanguageCode else {
             throw ValidationError("You need to provide a language code of the strings folder that will be treated as the reference language.")
         }
+        
+        let delimiter = self.delimiter ?? Constants.tab
         
         let fm = FileManager.default
         
@@ -165,7 +169,11 @@ public struct LocoPipe: ParsableCommand {
         }
         
         do {
-            let directoryContents = try fm.contentsOfDirectory(at: inputFolderURL, includingPropertiesForKeys: nil, options: [.skipsSubdirectoryDescendants])
+            let directoryContents = try fm.contentsOfDirectory(
+                at: inputFolderURL,
+                includingPropertiesForKeys: nil,
+                options: [.skipsSubdirectoryDescendants]
+            )
             
             var containsLprojFolder = false
             var containsReferenceLanguage = false
@@ -186,7 +194,14 @@ public struct LocoPipe: ParsableCommand {
                 throw ValidationError("The input folder provided does not contain any Localizable content folder (i.e. .lproj folder)")
             }
             
-            return .init(name: self.name, inputFolder: inputFolderURL, outputFile: outputFileURL, referenceLanguageCode: referenceLanguageCode, isVerbose: self.verbose)
+            return .init(
+                name: self.name,
+                inputFolder: inputFolderURL,
+                outputFile: outputFileURL,
+                referenceLanguageCode: referenceLanguageCode,
+                delimiter: delimiter,
+                isVerbose: self.verbose
+            )
 
         } catch let e {
             if self.verbose {
