@@ -4,7 +4,7 @@ import Foundation
 
 
 enum Constants {
-    static let tab: String = "\\t"
+    static let tab: String = "\u{0009}"
     static let languageFolderExtension = "lproj"
 }
 
@@ -111,8 +111,10 @@ public struct LocoPipe: ParsableCommand {
             try fm.createDirectory(at: outputFolderURL, withIntermediateDirectories: true)
         }
         
+        let delimiter: String = self.delimiter ?? Constants.tab
         
-        return .init(name: self.name, inputFile: inputURL, outputFolder: outputFolderURL, isVerbose: self.verbose)
+        
+        return .init(name: self.name, inputFile: inputURL, outputFolder: outputFolderURL, delimiter: delimiter, isVerbose: self.verbose)
     }
     
     // MARK: - TSV Generating

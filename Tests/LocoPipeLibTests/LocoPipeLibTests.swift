@@ -6,13 +6,13 @@ final class LocoPipeTests: XCTestCase {
     func testRegexWorksOnABasicLevel() {
         
         let lineOne = "Purpose / Comments\\tiOS Key\\ten"
-        let results = TSVFileParser.getColumnValues(from: lineOne)
+        let results = TSVFileParser.getColumnValues(from: lineOne, delimiter: "\\t")
         XCTAssertTrue(results.count == 3, "Expected 3 Results")
     }
     
     func testRegexWorksForActualCommasAndNotJustDelimitedCommas() {
         let lineTwo = "Testing\\tTesting.MyKey.Name\\tThis is a text string I am localizing. Wondering, can I have commas in a tsv?"
-        let results = TSVFileParser.getColumnValues(from: lineTwo)
+		let results = TSVFileParser.getColumnValues(from: lineTwo, delimiter: "\\t")
         XCTAssertTrue(results.count == 3, "Expected 3 Results")
     }
     
@@ -29,6 +29,7 @@ final class LocoPipeTests: XCTestCase {
         locopipe.output = NSTemporaryDirectory()
         locopipe.inverse = false
         locopipe.verbose = true
+		locopipe.delimiter = nil
 
         
         try locopipe.run()

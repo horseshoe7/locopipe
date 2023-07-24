@@ -10,6 +10,7 @@ public final class TSVFileParser {
         let name: String
         let inputFile: URL
         let outputFolder: URL
+        let delimiter: String
         let isVerbose: Bool
     }
     
@@ -80,7 +81,8 @@ extension TSVFileParser {
         }
         
         // the document should have comments, iOS Key, Android Key, then at least one language
-        let columnHeaders = firstRow.components(separatedBy: Constants.tab)
+        //let columnHeaders = firstRow.components(separatedBy: .init(charactersIn: "\\t"))
+        let columnHeaders = firstRow.components(separatedBy: configuration.delimiter)
         guard columnHeaders.count >= numberOfNonLanguageColumns + 1 else {
             throw ParserError.unexpectedFormat
         }
@@ -100,7 +102,7 @@ extension TSVFileParser {
             if row.isEmpty { continue }
             
             // need a regex that will parse these as expected
-            let columns = TSVFileParser.getColumnValues(from: row)
+            let columns = TSVFileParser.getColumnValues(from: row, delimiter: configuration.delimiter)
             guard columns.count == numberOfNonLanguageColumns + languageColumns.count else {
                 throw ParserError.internalError(details: "The Regex Parser is not working as expected (yet).  There should be 2 columns + number of detected languages in the .tsv sheet")
             }
@@ -158,9 +160,9 @@ extension TSVFileParser {
         return 2 // could be 3 in the future (Android support)
     }
     
-    static func getColumnValues(from tsvText: String) -> [String] {
+    static func getColumnValues(from tsvText: String, delimiter: String = Constants.tab) -> [String] {
         
-        return tsvText.components(separatedBy: Constants.tab)
+        return tsvText.components(separatedBy: delimiter)
     }
     
     // will only throw if there's a write error
