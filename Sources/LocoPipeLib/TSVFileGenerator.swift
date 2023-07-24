@@ -10,6 +10,7 @@ public struct TSVFileGenerator {
         let inputFolder: URL
         let outputFile: URL
         let referenceLanguageCode: String
+        let isVerbose: Bool
     }
     
     public enum ParserError: Error, LocalizedError {
@@ -33,6 +34,13 @@ public struct TSVFileGenerator {
     
     public init(_ configuration: Configuration) {
         self.configuration = configuration
+        
+        if configuration.isVerbose {
+            ConsoleIO.logDebug("Configuration:")
+            ConsoleIO.logDebug("Input Folder: \(configuration.inputFolder.path())")
+            ConsoleIO.logDebug("Output File: \(configuration.outputFile.path())")
+            ConsoleIO.logDebug("Reference Language Code: \(configuration.referenceLanguageCode)")
+        }
     }
     
     public func parseAndGenerateOutput() throws {
@@ -44,14 +52,24 @@ public struct TSVFileGenerator {
             let fm = FileManager.default
             let folderContents = try fm.contentsOfDirectory(at: configuration.inputFolder, includingPropertiesForKeys: nil, options: [.skipsSubdirectoryDescendants])
             
-            
+            if configuration.isVerbose {
+                ConsoleIO.logDebug("Input Folder Contents:")
+            }
             
             for folderName in folderContents where folderName.lastPathComponent.contains(Constants.languageFolderExtension) {
+                
+                if configuration.isVerbose {
+                    ConsoleIO.logDebug(folderName.path())
+                }
+                
                 let languageCode = (folderName.lastPathComponent as NSString).replacingOccurrences(of: ".\(Constants.languageFolderExtension)", with: "")
                 
                 var fileToParse: URL?
                 let languageFolder = try fm.contentsOfDirectory(at: folderName, includingPropertiesForKeys: nil, options: [.skipsSubdirectoryDescendants])
                 for file in languageFolder {
+                    if configuration.isVerbose {
+                        ConsoleIO.logDebug("\t -- \(file.lastPathComponent)")
+                    }
                     if file.lastPathComponent.contains(".strings") {
                         fileToParse = file
                         break
@@ -70,13 +88,14 @@ public struct TSVFileGenerator {
             
             
         } catch let e {
-            print("Caught an error: \(String(describing: e))")
+            ConsoleIO.logError("Caught an error: \(String(describing: e))")
             throw e
         }
     }
     
     
     func parse(_ languageCode: String, from fileToParse: URL) throws -> [String: LocalizationEntry] {
+        
         let stringsFile = try String(contentsOf: fileToParse)
         
         var currentComment: String?
@@ -132,7 +151,7 @@ public struct TSVFileGenerator {
         if value.hasSuffix("\";") {
             value = value.replacingOccurrences(of: "\";", with: "")
         } else {
-            print("Value likely had a formatting problem!")
+            ConsoleIO.logError("Value likely had a formatting problem!")
         }
         return (key: key, value: value)
     }

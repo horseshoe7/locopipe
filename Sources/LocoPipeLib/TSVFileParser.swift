@@ -10,6 +10,7 @@ public final class TSVFileParser {
         let name: String
         let inputFile: URL
         let outputFolder: URL
+        let isVerbose: Bool
     }
     
     public enum ParserError: Error, LocalizedError {
@@ -36,17 +37,23 @@ public final class TSVFileParser {
     
     public init(_ configuration: Configuration) {
         self.configuration = configuration
+        
+        if configuration.isVerbose {
+            ConsoleIO.logDebug("Configuration:")
+            ConsoleIO.logDebug("Input File: \(configuration.inputFile.path())")
+            ConsoleIO.logDebug("Output Folder: \(configuration.outputFolder.path())")
+        }
     }
     
     public func parseAndGenerateOutput() throws {
         
         do {
             let contents = try String(contentsOf: configuration.inputFile)
-            print("Opened File:\n\(contents)")
+            ConsoleIO.logDebug("Opened File:\n\(contents)")
             try parse(contents)
             
         } catch let e {
-            print("Caught an error: \(String(describing: e))")
+            ConsoleIO.logError("Caught an error: \(String(describing: e))")
             throw e
         }
     }

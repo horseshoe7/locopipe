@@ -39,6 +39,9 @@ public struct LocoPipe: ParsableCommand {
     @Flag(name: .long, help: "Will take a .strings input folder and generate a .tsv file.")
     public var inverse = false
     
+    @Flag(name: .shortAndLong, help: "Will output more debugging info as to what it's doing under the hood.")
+    public var verbose = false
+    
     @Option(name: .shortAndLong, help: "The language code that should be treated as the reference (for comments)")
     public var referenceLanguageCode: String?
     
@@ -53,19 +56,21 @@ public struct LocoPipe: ParsableCommand {
         
         if self.inverse {
             // parse the strings to TSV
+            ConsoleIO.logDebug("Parsing Localizable Strings to TSV")
             let configuration: TSVFileGenerator.Configuration = try validateArguments(input: &input, output: &output)
             let parser = TSVFileGenerator(configuration)
             try parser.parseAndGenerateOutput()
             
         } else {
             // parse the TSV to strings
+            ConsoleIO.logDebug("Parsing TSV File to Strings")
             let configuration: TSVFileParser.Configuration = try validateArguments(input: &input, output: &output)
             let parser = TSVFileParser(configuration)
             try parser.parseAndGenerateOutput()
         }
         
         
-        print("Generated Localization Files Successfully")
+        ConsoleIO.logDebug("Generated Localization Files Successfully")
         //throw ExitCode.success
     }
     
@@ -105,7 +110,7 @@ public struct LocoPipe: ParsableCommand {
         }
         
         
-        return .init(name: self.name, inputFile: inputURL, outputFolder: outputFolderURL)
+        return .init(name: self.name, inputFile: inputURL, outputFolder: outputFolderURL, isVerbose: self.verbose)
     }
     
     // MARK: - TSV Generating
@@ -168,6 +173,6 @@ public struct LocoPipe: ParsableCommand {
             throw ValidationError("The input folder provided does not contain any Localizable content folder (i.e. .lproj folder)")
         }
         
-        return .init(name: self.name, inputFolder: inputFolderURL, outputFile: outputFileURL, referenceLanguageCode: referenceLanguageCode)
+        return .init(name: self.name, inputFolder: inputFolderURL, outputFile: outputFileURL, referenceLanguageCode: referenceLanguageCode, isVerbose: self.verbose)
     }
 }

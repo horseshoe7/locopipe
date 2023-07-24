@@ -26,6 +26,7 @@ final class LocoPipeTests: XCTestCase {
         locopipe.input = testFileURL.path()
         locopipe.output = NSTemporaryDirectory()
         locopipe.inverse = false
+        locopipe.verbose = false
         
         try locopipe.run()
         
@@ -46,6 +47,7 @@ final class LocoPipeTests: XCTestCase {
         locopipe.output = "\(locopipe.input!)/Output.tsv"
         locopipe.inverse = true
         locopipe.referenceLanguageCode = "en"
+        locopipe.verbose = false
         
         try locopipe.run()
         
